@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import {
   authors,
   addAuthor,
@@ -6,26 +6,25 @@ import {
   updateAuthor,
   deleteAuthor,
 } from "../models/author";
+import { getBooksByAuthor } from "../models/book";
+import { validateAuthorCreate, validateAuthorUpdate } from "../middleware/validation";
 
 const router = express.Router();
 
 // CREATE Author
-router.post("/", (req, res) => {
+router.post("/", validateAuthorCreate, (req: Request, res: Response) => {
   const { name, birthYear } = req.body;
-  if (!name) {
-    return res.status(400).json({ error: "Author name is required" });
-  }
   const newAuthor = addAuthor(name, birthYear);
   res.status(201).json(newAuthor);
 });
 
 // READ All Authors
-router.get("/", (req, res) => {
+router.get("/", (req: Request, res: Response) => {
   res.json(authors);
 });
 
 // READ Author by ID
-router.get("/:id", (req, res) => {
+router.get("/:id", (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const author = getAuthorById(id);
   if (!author) {
@@ -35,7 +34,7 @@ router.get("/:id", (req, res) => {
 });
 
 // UPDATE Author
-router.put("/:id", (req, res) => {
+router.put("/:id", validateAuthorUpdate, (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const updated = updateAuthor(id, req.body);
   if (!updated) {
@@ -45,13 +44,22 @@ router.put("/:id", (req, res) => {
 });
 
 // DELETE Author
-router.delete("/:id", (req, res) => {
+router.delete("/:id", (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const deleted = deleteAuthor(id);
   if (!deleted) {
     return res.status(404).json({ error: "Author not found" });
   }
   res.status(204).send();
+});
+
+// LIST Books by Author
+router.get("/:id/books", (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const author = getAuthorById(id);
+  if (!author) return res.status(404).json({ error: "Author not found" });
+  const list = getBooksByAuthor(id);
+  res.json(list);
 });
 
 export default router;
